@@ -1,0 +1,24 @@
+[package]
+name = "commander_smb"
+description = "SMB 2/3 (Windows share) vfs plugin for Commander (C ABI v1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+commander_plugin_abi = { path = "../abi", features = ["glue"] }
+# Pure-Rust SMB 2/3 client (NTLM, signing, encryption; RustCrypto, no C): MIT OR Apache-2.0.
+smb2 = { version = "0.43", default-features = false, features = ["tokio"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+# Passwords are wiped from memory when dropped.
+zeroize = "1"
+[dev-dependencies]
+# In-process SMB 2/3 server (MIT) for end-to-end tests of the real client; never shipped.
+smb-server = "0.12"
+tempfile = "3"

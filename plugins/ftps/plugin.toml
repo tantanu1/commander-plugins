@@ -1,0 +1,14 @@
+# Same library as plugins/ftp (installed next to it): one manifest per URL scheme.
+id = "ftps"
+name = "FTPS (explicit TLS)"
+version = "0.2.0"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "../ftp/commander_ftp.dll"
+linux = "../ftp/libcommander_ftp.so"
+macos = "../ftp/libcommander_ftp.dylib"
+[vfs]
+scheme = "ftps"

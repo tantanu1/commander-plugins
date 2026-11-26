@@ -1,0 +1,14 @@
+[package]
+name = "commander_plugin_abi"
+description = "C ABI v1 types of Commander plugins (mirror of sdk/include/commander_plugin.h)"
+version.workspace = true
+edition.workspace = true
+license = "MIT" # plugin SDK: anyone may build plugins
+
+[dependencies]
+
+[features]
+# std-based shared glue for Rust plugins (glue::Fs + export_vfs!). The host doesn't need it.
+glue = ["stage"]
+# std: private temp dir for staging archive writes (host WCX + 7-Zip plugin).
+stage = []

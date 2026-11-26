@@ -1,0 +1,16 @@
+id = "vmware-vms-disk"
+name = "VMware VMs"
+version = "0.2.0"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "commander_vmware.dll"
+linux = "libcommander_vmware.so"
+macos = "libcommander_vmware.dylib"
+[vfs]
+scheme = "vmware"
+[drive]
+label = "vm"
+root = "vmware://"

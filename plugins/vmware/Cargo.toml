@@ -1,0 +1,26 @@
+[package]
+name = "commander_vmware"
+description = "Files of running VMware VMs' guests (VIX, vmrun fallback) as a vfs plugin for Commander (C ABI v1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+commander_plugin_abi = { path = "../abi", features = ["glue"] }
+# VIX is loaded at run time from the user's VMware install (never shipped); already in the lock.
+libloading = "0.8"
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+# Guest passwords are wiped from memory when dropped.
+zeroize = "1"
+
+[target.'cfg(windows)'.dependencies]
+# HKLM VMware InstallPath (already in the lock via sevenzip)
+winreg = "0.56"
+
+[dev-dependencies]
+tempfile = "3.27.0"

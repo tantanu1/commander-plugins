@@ -1,0 +1,24 @@
+[package]
+name = "commander_sftp"
+description = "SFTP (SSH) vfs plugin for Commander (C ABI v1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+commander_plugin_abi = { path = "../abi", features = ["glue"] }
+# Pure-Rust SSH; ring = same crypto backend as the s3/ftp plugins (no aws-lc C build).
+russh = { version = "0.65", default-features = false, features = ["ring", "rsa"] }
+# raw-string: names stay bytes, so non-UTF-8 names are skipped, never mangled into wrong paths.
+russh-sftp = { version = "4", features = ["raw-string"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "io-util"] }
+ring = "0.17"
+data-encoding = "2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+# Key passphrases are wiped from memory when dropped (already in the tree via russh).
+zeroize = "1"

@@ -1,0 +1,13 @@
+id = "smb"
+name = "SMB"
+version = "0.1.1"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "commander_smb.dll"
+linux = "libcommander_smb.so"
+macos = "libcommander_smb.dylib"
+[vfs]
+scheme = "smb"

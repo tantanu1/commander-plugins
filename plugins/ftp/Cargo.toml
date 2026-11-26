@@ -1,0 +1,18 @@
+[package]
+name = "commander_ftp"
+description = "FTP / FTPS (explicit TLS) vfs plugin for Commander (C ABI v1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+commander_plugin_abi = { path = "../abi", features = ["glue"] }
+# rustls + ring: same TLS stack as the s3 plugin (ureq); suppaftp re-exports rustls.
+suppaftp = { version = "13", default-features = false, features = ["rustls-ring"] }
+webpki-roots = "1"
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"

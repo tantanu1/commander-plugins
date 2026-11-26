@@ -1,0 +1,20 @@
+[package]
+name = "commander_sevenzip"
+description = "Archives through the user's installed 7-Zip (rar, iso, cab, arj, encrypted, 7z packing; C ABI v1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+commander_plugin_abi = { path = "../abi", features = ["glue"] }
+
+[target.'cfg(windows)'.dependencies]
+# HKLM\SOFTWARE\7-Zip Path (already in the lock via other crates)
+winreg = "0.56"
+
+[dev-dependencies]
+tempfile = "3.27.0"

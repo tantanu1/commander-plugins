@@ -1,0 +1,13 @@
+id = "ftp"
+name = "FTP"
+version = "0.2.0"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "commander_ftp.dll"
+linux = "libcommander_ftp.so"
+macos = "libcommander_ftp.dylib"
+[vfs]
+scheme = "ftp"

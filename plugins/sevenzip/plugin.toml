@@ -1,0 +1,16 @@
+id = "sevenzip"
+name = "7-Zip archives"
+version = "0.1.1"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "commander_sevenzip.dll"
+linux = "libcommander_sevenzip.so"
+macos = "libcommander_sevenzip.dylib"
+[vfs]
+scheme = "sevenzip"
+# Built-in readers keep zip/7z/tar; these (and zip/7z the built-ins can't read, e.g.
+# encrypted) open through the user's 7-Zip. Alt+F5 packs .7z through it.
+extensions = ["rar", "iso", "cab", "arj", "lzh", "lha", "wim", "001", "7z", "zip"]

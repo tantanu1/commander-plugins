@@ -1,0 +1,13 @@
+id = "sftp"
+name = "SFTP"
+version = "0.2.0"
+abi = 1
+transport = "dylib"
+kinds = ["vfs"]
+threading = "concurrent"
+[entry]
+windows = "commander_sftp.dll"
+linux = "libcommander_sftp.so"
+macos = "libcommander_sftp.dylib"
+[vfs]
+scheme = "sftp"
