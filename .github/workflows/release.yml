@@ -1,0 +1,101 @@
+# Release: build every plugin for each target, then publish one zip per plugin
+# (<id>-<plugin version>-<target>.zip) + one bundle (commander-plugins-<version>-<target>.zip)
+# per target as a GitHub Release of this repo (scripts/package.sh).
+# Tag vX.Y.Z = the Commander version this export came from (= workspace version in Cargo.toml).
+# Run: push the tag, or Actions > release > Run workflow with an existing tag.
+# Generated from the Commander repo (packaging/plugins-repo/release.yml): edit there.
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release, e.g. v0.0.33"
+        required: true
+        type: string
+permissions: {}
+concurrency: { group: "release-${{ inputs.tag || github.ref_name }}", cancel-in-progress: false }
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+jobs:
+  build:
+    permissions: { contents: read }
+    strategy:
+      fail-fast: false
+      matrix: # same targets as the Commander app release
+        include:
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: windows-latest, target: aarch64-pc-windows-msvc }
+          - { os: ubuntu-22.04,   target: x86_64-unknown-linux-gnu } # oldest glibc we support
+          - { os: macos-latest,   target: aarch64-apple-darwin }
+          - { os: macos-latest,   target: x86_64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: check tag
+        shell: bash
+        run: |
+          if ! [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::tag must be vX.Y.Z, not '$TAG'"; exit 1; fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with: { targets: "${{ matrix.target }}" }
+      # No rust-cache on purpose: Actions caches of a public repo can be restored by workflows
+      # from fork PRs (cache poisoning of release builds).
+      - name: build + package
+        shell: bash
+        env: { TARGET: "${{ matrix.target }}" }
+        run: |
+          set -euxo pipefail
+          v=${TAG#v}
+          ws=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "$ws" != "$v" ]; then echo "::error::tag $TAG, but Cargo.toml says version $ws"; exit 1; fi
+          cargo build --release --locked --target "$TARGET"
+          bash scripts/package.sh "$TARGET" "$v" dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: "plugins-${{ matrix.target }}"
+          path: dist/*.zip # only the packaged zips: never source or target/
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with: { path: dist, merge-multiple: true }
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          notes="Commander plugins exported from Commander $TAG. Use the release with your Commander's version (or an older one); the registry lists the oldest Commander each plugin needs.
+
+          - One plugin: <id>-<plugin version>-<target>.zip (ftps brings ftp, whose library it uses).
+          - All plugins: commander-plugins-${TAG#v}-<target>.zip.
+
+          Install: drag the zip onto a Commander panel and confirm (or Configuration > Options > Plugins > Install from file, or Browse registry). Or unzip it into your user plugin folder (%APPDATA%\\commander\\plugins on Windows, ~/.config/commander/plugins on Linux/macOS) and restart. Guide: INSTALL-PLUGINS.md (in every zip).
+          Targets: x86_64/aarch64-pc-windows-msvc, x86_64-unknown-linux-gnu, aarch64/x86_64-apple-darwin."
+          # Never replace an asset: builds are not bit-reproducible and the registry pins sha256.
+          # New tag: create the release. Existing DRAFT: upload only the missing assets.
+          # Existing published release: refuse (make a new tag instead).
+          if ! draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            gh release create "$TAG" dist/*.zip --verify-tag --title "Commander plugins $TAG" --notes "$notes"
+          elif [ "$draft" = true ]; then
+            have=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+            for f in dist/*.zip; do
+              if grep -qxF "$(basename "$f")" <<<"$have"; then echo "kept $(basename "$f")"
+              else gh release upload "$TAG" "$f"; fi
+            done
+            gh release edit "$TAG" --draft=false
+          else
+            echo "::error::release $TAG is already published: its assets are never replaced (registry sha256 pins). Tag a new version."
+            exit 1
+          fi

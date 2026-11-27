@@ -8,8 +8,18 @@ or `7zz` / `7z` on PATH). Developer guide (writing your own):
 [PLUGIN-DEV.md](PLUGIN-DEV.md).
 
 The installers (`.msi`, `.deb`, `.rpm`, `.AppImage`, `.dmg`) contain **only the app**. Plugins are a
-separate download: `commander-plugins-<version>-<target>.zip` on the same release page. They exist
-from **v0.0.6** on; the plugin ABI must match the app, so use the zip of the same release.
+separate download from the open-source plugins repo:
+[github.com/tantanu1/commander-plugins/releases](https://github.com/tantanu1/commander-plugins/releases).
+Each release has, per platform (target, e.g. `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`,
+`x86_64-unknown-linux-gnu`):
+
+- one zip per plugin: `<id>-<plugin version>-<target>.zip`, e.g. `sftp-0.2.0-x86_64-pc-windows-msvc.zip`
+  (`ftps` also holds `ftp`, whose library it uses);
+- `commander-plugins-<version>-<target>.zip`: all plugins.
+
+A plugins release `vX.Y.Z` is built with Commander vX.Y.Z: use the one with your Commander's
+version (or an older one). Up to Commander v0.0.32 the plugin zip was on the Commander release
+page instead.
 
 > **Upgrading from v0.0.6 or v0.0.7?** Those installers included the plugins; the new installer
 > removes them. Drop the plugin zip on Commander (below) to get them back.
@@ -18,7 +28,7 @@ from **v0.0.6** on; the plugin ABI must match the app, so use the zip of the sam
 
 | Plugin | How to open it |
 |---|---|
-| S3 | Type `s3://bucket/path` (or just `s3://` for the bucket list) in the path bar |
+| S3 | The `s3` drive (Alt+F1 / Alt+F2): profiles, then buckets; or type `s3://` in the path bar |
 | FTP / FTPS | **Ctrl+F** (Net > FTP Connect); bookmarks in `ftp.toml` |
 | SFTP | **Ctrl+F** or type `sftp://host/path`; bookmarks in `sftp.toml` |
 | SMB | **Ctrl+F** or type `smb://host/share/path`; bookmarks in `smb.toml` |
@@ -29,8 +39,9 @@ from **v0.0.6** on; the plugin ABI must match the app, so use the zip of the sam
 
 ## Install: drop the zip on Commander
 
-1. Download `commander-plugins-<version>-<target>.zip` for **the same version and platform** as
-   your Commander from [Releases](https://github.com/tantanu1/public-commander/releases).
+1. Download a plugin zip (one plugin, or `commander-plugins-<version>-<target>.zip` for all) for
+   **your Commander's version and platform** from the
+   [plugin releases](https://github.com/tantanu1/commander-plugins/releases).
 2. Drag the zip from Explorer / Finder / your file manager onto a Commander panel (or drag it from
    one panel to the other, or use **Configuration > Options > Plugins > Install from file...** (a zip or a plugin folder) and
    type its path). Commander lists the plugins inside, all checked: untick what you don't want,
@@ -54,24 +65,25 @@ program's folder are shown as built in and can't be uninstalled there.
 
 ## Install by hand: unzip into your plugin folder
 
-1. Download `commander-plugins-<version>-<target>.zip` for **the same version and platform** as
-   your Commander from [Releases](https://github.com/tantanu1/public-commander/releases) (target:
-   e.g. `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`).
-2. Unzip it into your user plugin folder, so you get `plugins/s3/plugin.toml`, `plugins/ftp/...`,
-   `plugins/ftps/...`, `plugins/sftp/...`, `plugins/smb/...`, `plugins/sevenzip/...`,
-   `plugins/vmware-vms-disk/...`:
+1. Download a plugin zip for **your Commander's version and platform** from the
+   [plugin releases](https://github.com/tantanu1/commander-plugins/releases) (above).
+2. Unzip it into your user plugin folder, so you get `plugins/<id>/plugin.toml` (all plugins:
+   `plugins/s3/...`, `plugins/ftp/...`, `plugins/ftps/...`, `plugins/sftp/...`, `plugins/smb/...`,
+   `plugins/sevenzip/...`, `plugins/vmware-vms-disk/...`):
    - Windows: `%APPDATA%\commander\plugins` (`C:\Users\<you>\AppData\Roaming\commander\plugins`).
-     PowerShell: `Expand-Archive commander-plugins-*.zip "$env:APPDATA\commander\plugins" -Force`
+     PowerShell: `Expand-Archive <zip> "$env:APPDATA\commander\plugins" -Force`
    - Linux / macOS: `~/.config/commander/plugins` (`$XDG_CONFIG_HOME/commander/plugins` if set).
-     `mkdir -p ~/.config/commander/plugins && unzip -o commander-plugins-*.zip -d ~/.config/commander/plugins`
+     `mkdir -p ~/.config/commander/plugins && unzip -o <zip> -d ~/.config/commander/plugins`
    - macOS may quarantine downloaded libraries: `xattr -dr com.apple.quarantine ~/.config/commander/plugins`
 3. Restart Commander.
 
-This folder survives app updates; after updating Commander, drop (or unzip) the new release's
-plugin zip.
+This folder survives app updates; after updating Commander, drop (or unzip) the plugin zips of
+the matching plugins release.
 
 Each plugin is one folder holding `plugin.toml` + its library (`.dll` / `.so` / `.dylib`).
-`ftps` holds only a `plugin.toml`: it uses the library in `../ftp`, so keep both.
+`ftps` holds only a `plugin.toml`: it uses the library in `../ftp`, so keep both (the ftps zip
+contains both). The zips also hold this guide (`INSTALL-PLUGINS.md`), `LICENSE.txt` (MIT) and
+`THIRD-PARTY-NOTICES.txt`, and each plugin folder its `README.md`.
 
 Other folders searched after the user folder (the first plugin with a given id wins), e.g. for a
 portable setup: `<folder of the commander program>/plugins`; Linux also
@@ -99,17 +111,24 @@ plugin it is just an unknown path. Ctrl+F says "FTP plugin not installed" when f
 
 ## S3 (Amazon S3, MinIO, Cloudflare R2, SeaweedFS, ...)
 
-1. Credentials, like the AWS CLI (first match wins): env `AWS_ACCESS_KEY_ID` +
-   `AWS_SECRET_ACCESS_KEY` (+ `AWS_SESSION_TOKEN`); else the profile `AWS_PROFILE` (default
-   `default`) in `~/.aws/credentials`, then `~/.aws/config`. Region: `AWS_REGION`,
-   `AWS_DEFAULT_REGION`, profile `region`, else `us-east-1`; buckets in other regions are
-   followed automatically. Not supported: SSO, assume-role, `credential_process`, instance roles.
-2. S3-compatible servers: set the endpoint with env `AWS_ENDPOINT_URL` (or `AWS_ENDPOINT_URL_S3`,
+1. Open it from the **`s3` drive** (drive bar, or Alt+F1 / Alt+F2): it lists your AWS profiles
+   (`~/.aws/config` and `~/.aws/credentials`), open a profile to see its buckets. You can also
+   type `s3://<profile>/`, `s3://<profile>/<bucket>/folder` or the older `s3://bucket/folder`
+   in the path bar. F3 view, F5 copy, F6 move/rename, F7 new folder, F8 delete (always
+   permanent) work as on disk. F6 between two profiles is not supported: copy instead.
+2. Credentials per profile: env `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` (+
+   `AWS_SESSION_TOKEN`) for the default profile; else keys in the profile; else SSO / `aws login`
+   / `credential_process` / role profiles, which need the **AWS CLI v2** on PATH. Region:
+   `AWS_REGION`, `AWS_DEFAULT_REGION`, profile `region`, else `us-east-1`; buckets in other
+   regions are followed automatically.
+3. **Expired credentials**: Commander shows "Credentials expired" and the exact command it will
+   run (e.g. `aws sso login --profile work`). **Log in** (Enter) runs it for you (the browser
+   opens), then **Retry** (R). Only `aws` is ever run this way. Profiles with static keys have no
+   login button: renew the keys.
+4. S3-compatible servers: set the endpoint with env `AWS_ENDPOINT_URL` (or `AWS_ENDPOINT_URL_S3`,
    or `endpoint_url = http://localhost:9000` in the profile). Path-style addressing is then the
    default; override with env `COMMANDER_S3_PATH_STYLE=0|1`.
-3. Type `s3://` in the path bar (bucket list) or `s3://bucket/folder`, Enter. F3 view,
-   F5 copy, F6 move/rename, F7 new folder, F8 delete (always permanent) work as on disk.
-4. Downloads (F5 out of S3, F3 view, quick view): objects bigger than one chunk are fetched in
+5. Downloads (F5 out of S3, F3 view, quick view): objects bigger than one chunk are fetched in
    parallel ranged GETs and delivered in order. Tune in `s3.toml` next to `config.toml`
    (`%APPDATA%\commander\s3.toml` on Windows, `~/.config/commander/s3.toml` elsewhere; env
    `COMMANDER_S3_CONFIG` overrides the path). Bad or missing values keep the defaults.

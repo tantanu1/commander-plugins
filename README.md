@@ -35,12 +35,28 @@ cargo clippy --all-targets -- -D warnings
 A plugin folder is `plugins/<name>/plugin.toml` plus the built library next to it
 (`ftps` uses the `ftp` library: install both).
 
+Release zips: `bash scripts/package.sh <target> <version> dist` after
+`cargo build --release --locked --target <target>`.
+
 ## Install
 
-Official builds of every plugin ship with each Commander release:
-[releases](https://github.com/tantanu1/public-commander/releases) (`commander-plugins-<version>-<target>.zip`).
-In Commander: Options > Plugins > Browse registry, or drop the zip on a panel. Details:
+Official builds: the [releases](https://github.com/tantanu1/commander-plugins/releases) of this
+repo. Per target (`x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`,
+`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-apple-darwin`):
+
+- `<id>-<plugin version>-<target>.zip`: one plugin (`ftps` also holds `ftp`, whose library it uses).
+- `commander-plugins-<version>-<target>.zip`: all plugins.
+
+In Commander: Options > Plugins > Browse registry, or drop a zip on a panel. Details:
 [docs/INSTALL-PLUGINS.md](docs/INSTALL-PLUGINS.md).
+
+## Releases
+
+A tag `vX.Y.Z` is the Commander version this repo was exported from (= `version` in
+[Cargo.toml](Cargo.toml)); each plugin's own version is in its `plugin.toml` and in its zip
+name. Pushing the tag runs [.github/workflows/release.yml](.github/workflows/release.yml):
+release build per target, [scripts/package.sh](scripts/package.sh) packs the zips, and they are
+published as the GitHub Release of that tag.
 
 ## Contributing
 
